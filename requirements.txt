@@ -1,0 +1,16 @@
+chex
+dm-haiku
+flax
+gymnax
+jax
+jaxlib
+matplotlib
+ml_collections
+optax
+optuna
+pandas
+protobuf==3.20.3
+pycolab
+ray[tune]
+rlax
+wandb

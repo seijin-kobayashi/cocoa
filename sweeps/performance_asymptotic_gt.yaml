@@ -1,0 +1,21 @@
+program: run.py
+method: grid
+metric:
+  goal: maximize
+  name: reward_running_avg
+name: 20230515_canonical_performance_asymptotic_gt
+parameters:
+  config:
+    values: [
+      "configs/canonical_conveyorlength_performance.py:103;reinforce",
+      "configs/canonical_conveyorlength_performance.py:103;advantage_gt",
+      "configs/canonical_conveyorlength_performance.py:103;qnet_gt",
+      "configs/canonical_conveyorlength_performance.py:103;causal_state_gt",
+      "configs/canonical_conveyorlength_performance.py:103;causal_reward_gt",
+    ]
+
+
+  config.seed:
+     values: [1000,1001,1002,1003,1004,1005,1006,1007,1008,1009,1010,1011,1012,1013,1014,1015,1016,1017,1018,1019,1020,1021,1022,1023,1024,1025,1026,1027,1028,1029]
+  log_level:
+    value: 1
