@@ -64,4 +64,3 @@ wandb sweep sweeps/tree_env.yaml
 ```
 python3 figures/var_asymptotic_state-overlap_gt.py <WANDB_SWEEP_ID>
 ```
-
