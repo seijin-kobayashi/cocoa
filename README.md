@@ -65,5 +65,13 @@ wandb sweep sweeps/tree_env.yaml
 python3 figures/var_asymptotic_state-overlap_gt.py <WANDB_SWEEP_ID>
 ```
 
+### Interleaving tasks
+```
+wandb sweep task_interleaving_stochastic.yaml
+
+wandb sweep task_interleaving_stochastic_gt.yaml
+```
+
+
 ## Acknowledgements
 Research supported with Cloud TPUs from Google's [TPU Research Cloud (TRC)](https://sites.research.google/trc/about/).
