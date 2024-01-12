@@ -22,6 +22,16 @@ def contribution_config(method, global_config):
         config.contribution = "reinforce"
         config.return_contribution = "action_value"
 
+    elif method == "traj_cv":
+        config.hindsight_model_type = "hypernet"
+        config.lr_contrib = 0.003
+        config.contribution = "traj_cv"
+        config.hidden_dim_qnet = (256,)
+        config.lambda_qnet = 0.9
+        config.optimizer_qnet = "adamw"
+        config.return_contribution = "action_value"
+        config.steps_qnet = 1
+
     elif method == "advantage":
         config.hindsight_model_type = "hypernet"
         config.lr_contrib = 0.001
@@ -102,6 +112,11 @@ def contribution_config(method, global_config):
         config.contribution = "qnet_gt"
         config.return_contribution = "advantage"
 
+    elif method == "traj_cv_gt":
+        config.hindsight_model_type = "hypernet"
+        config.contribution = "traj_cv_gt"
+        config.return_contribution = "action_value"
+
     elif "causal_state_gt" in method:
         config.hindsight_model_type = "hypernet"
         config.contribution = "causal_gt"
@@ -177,8 +192,7 @@ def get_config(env_length):
 
     config.contribution = "parallel"
     config.parallel_keys = (
-        # "qnet_gt,qnet,causal_state,causal_reward,causal_reward_feature,advantage,reinforce"
-        "qnet_gt,qnet,causal_state,causal_reward,advantage,reinforce"
+        "qnet_gt,qnet,causal_state,causal_reward,advantage,reinforce,traj_cv"
     )
     config.parallel_main_key = "qnet_gt"
     config.parallel_reset_before_update = False

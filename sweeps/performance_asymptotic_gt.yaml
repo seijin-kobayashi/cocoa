@@ -12,6 +12,7 @@ parameters:
       "configs/canonical_conveyorlength_performance.py:103;qnet_gt",
       "configs/canonical_conveyorlength_performance.py:103;causal_state_gt",
       "configs/canonical_conveyorlength_performance.py:103;causal_reward_gt",
+      "configs/canonical_conveyorlength_performance.py:103;traj_cv_gt",
     ]
 
 

@@ -13,6 +13,7 @@ parameters:
       "configs/canonical_conveyorlength_performance.py:23;causal_state",
       "configs/canonical_conveyorlength_performance.py:23;causal_reward",
       "configs/canonical_conveyorlength_performance.py:23;causal_reward_feature",
+      "configs/canonical_conveyorlength_performance.py:23;traj_cv",
 
       "configs/canonical_conveyorlength_performance.py:43;reinforce",
       "configs/canonical_conveyorlength_performance.py:43;advantage",
@@ -20,6 +21,7 @@ parameters:
       "configs/canonical_conveyorlength_performance.py:43;causal_state",
       "configs/canonical_conveyorlength_performance.py:43;causal_reward",
       "configs/canonical_conveyorlength_performance.py:43;causal_reward_feature",
+      "configs/canonical_conveyorlength_performance.py:43;traj_cv",
 
       "configs/canonical_conve/yorlength_performance.py:63;reinforce",
       "configs/canonical_conveyorlength_performance.py:63;advantage",
@@ -27,6 +29,7 @@ parameters:
       "configs/canonical_conveyorlength_performance.py:63;causal_state",
       "configs/canonical_co//nveyorlength_performance.py:63;causal_reward",
       "configs/canonical_conveyorlength_performance.py:63;causal_reward_feature",
+      "configs/canonical_conveyorlength_performance.py:63;traj_cv",
 
       "configs/canonical_conveyorlength_performance.py:83;reinforce",
       "configs/canonical_conveyorlength_performance.py:83;advantage",
@@ -34,6 +37,7 @@ parameters:
       "configs/canonical_conveyorlength_performance.py:83;causal_state",
       "configs/canonical_conveyorlength_performance.py:83;causal_reward",
       "configs/canonical_conveyorlength_performance.py:83;causal_reward_feature",
+      "configs/canonical_conveyorlength_performance.py:83;traj_cv",
 
       "configs/canonical_conveyorlength_performance.py:103;reinforce",
       "configs/canonical_conveyorlength_performance.py:103;advantage",
@@ -41,6 +45,7 @@ parameters:
       "configs/canonical_conveyorlength_performance.py:103;causal_state",
       "configs/canonical_conveyorlength_performance.py:103;causal_reward",
       "configs/canonical_conveyorlength_performance.py:103;causal_reward_feature",
+      "configs/canonical_conveyorlength_performance.py:103;traj_cv",
     ]
 
   config.seed:

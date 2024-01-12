@@ -79,11 +79,48 @@ def get_feature_model(config, env):
             init=hk.initializers.RandomNormal(mean=config.threshold_shift),
         )
 
-        def hard_sigmoid_st(x):
-            return x + jax.lax.stop_gradient((x > config.threshold_shift) * 1.0 - x)
+        def relu_st(y):
+            return y + jax.lax.stop_gradient((y > config.threshold_shift) * y - y)
 
-        feature = hard_sigmoid_st(gate[action].reshape(config.hidden_dim_features, *x.shape)) @ x
-        feature = hard_sigmoid_st(feature)
+        def hard_sigmoid_st(y):
+            return y + jax.lax.stop_gradient((y > config.threshold_shift) * 1.0 - y)
+
+        if config.get("discretization", "sigmoid") == "sigmoid":
+            discretization = hard_sigmoid_st
+        elif config.discretization == "relu":
+            discretization = relu_st
+
+        action_gate = gate[action].reshape(config.hidden_dim_features, *x.shape)
+        feature = (action_gate * action_gate) @ x
+        feature = discretization(feature)
         return feature
 
-    return feature_model
+    if config.get("feature_model", "gate") == "gate":
+        return feature_model
+
+    def feature_model(x, action):
+        assert len(x.shape) == 1
+
+        mask = hk.get_parameter(
+            name="gate",
+            shape=(env.num_actions, *x.shape),
+            init=hk.initializers.Constant(1.0),
+        )
+
+        def relu_st(y):
+            return y + jax.lax.stop_gradient((y > config.threshold_shift) * y - y)
+
+        def hard_sigmoid_st(y):
+            return y + jax.lax.stop_gradient((y > config.threshold_shift) * 1.0 - y)
+
+        if config.get("discretization", "sigmoid") == "sigmoid":
+            discretization = hard_sigmoid_st
+        elif config.discretization == "relu":
+            discretization = relu_st
+
+        feature = mask[action] * mask[action] * x
+        feature = discretization(feature)
+        return feature
+
+    if config.feature_model == "mask":
+        return feature_model

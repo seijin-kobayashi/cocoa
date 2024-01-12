@@ -14,9 +14,10 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+NUM_DECIMAL = 4
 
 def get_idx(curr_obs, observations):
-    match = jax.vmap(lambda x, y: jnp.all(jnp.abs(x - y) < 0.00001), in_axes=(0, None))(
+    match = jax.vmap(lambda x, y: jnp.all(jnp.round(jnp.abs(x - y), decimals=NUM_DECIMAL) == 0), in_axes=(0, None))(
         jnp.stack(observations), curr_obs
     )
     return jax.lax.cond(
@@ -45,7 +46,7 @@ def dfs(env, observe, step_mdp, curr_state, observations, transition, reward, re
     if curr_state.done:
         print("done reached!")
         zero_idx = np.where(env.reward_values == 0)[0][0]
-        transition[curr_obs_idx][curr_obs_idx] = [0] * env.num_actions
+        transition[curr_obs_idx][curr_obs_idx] = [1] * env.num_actions
         reward_probs[curr_obs_idx] = [
             [0] * zero_idx + [1.0] + [0.0] * (len(env.reward_values) - 1 - zero_idx)
             for _ in range(env.num_actions)
@@ -87,7 +88,17 @@ def get_mdp(env):
 class MDP:
     def __init__(self, env):
         self.max_trial = env.length
-        observation, transition, reward, reward_probs = get_mdp(env)
+
+        if hasattr(env, "mdp"):
+            transition, reward_probs = env.mdp
+            observation = env.observations
+            reward = reward_probs@env.reward_values
+            init_state = env.init_state
+
+        else:
+            observation, transition, reward, reward_probs = get_mdp(env)
+            init_state = jax.nn.one_hot(0, observation.shape[0])
+
         self.mdp_observation = observation
         self.mdp_transition = transition
         self.mdp_reward = reward  # average rewards of state-action pairs
@@ -95,7 +106,7 @@ class MDP:
         self.mdp_reward_values = jnp.array(env.reward_values)
         self.num_state = observation.shape[0]
         self.num_actions = env.num_actions
-        self.init_state = jax.nn.one_hot(0, self.num_state)
+        self.init_state = init_state
 
     def observation_to_state(self, observation):
         return jax.nn.one_hot(get_idx(observation, self.mdp_observation), self.num_state)
@@ -105,12 +116,12 @@ class MDP:
         Gets a hindsight object as input, and return the unique one hot encoding associated to it.
         """
         all_hindsight_objects = jnp.reshape(
-            all_hindsight_objects, (-1, *all_hindsight_objects.shape[3:])
+            all_hindsight_objects, (-1, *hindsight_object.shape)
         )
 
         hs_idx = get_idx(hindsight_object, all_hindsight_objects)
         return jax.nn.one_hot(
-            hs_idx, self.num_state * self.num_actions * len(self.mdp_reward_values)
+            hs_idx, all_hindsight_objects.shape[0]
         )
 
     def get_state_action_successor(self, curr_state, policy_prob, horizon):

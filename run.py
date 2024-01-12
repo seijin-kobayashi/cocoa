@@ -23,10 +23,10 @@ from absl import app, flags
 from ml_collections import config_flags
 
 import wandb
-from callback import get_policy_gradient_analyses_callback, env_info_callback
+from callback import get_policy_gradient_analyses_callback, env_info_callback, get_task_disentangling_callback
 from ccoa import agents, envs
 from ccoa.accumulator import ReplayBuffer
-from ccoa.contribution import MDP, causal, parallel, qnet, reinforce
+from ccoa.contribution import MDP, causal, parallel, qnet, reinforce, trajcv
 from ccoa.contribution.modules import hindsight_object, value, qvalue, contribution_coefficient
 from ccoa.experiment import Event, Experiment
 from ccoa.networks.models import (
@@ -112,6 +112,24 @@ def get_contribution(config, env, mdp):
             return_type=config.return_contribution,
             qvalue_module=qvalue_module,
         )
+    elif config.contribution == 'traj_cv' or config.contribution == 'traj_cv_gt':
+        if config.contribution == 'traj_cv_gt':
+            qvalue_module = qvalue.QValueGT(
+                mdp=mdp,
+            )
+        else:
+            qvalue_module = qvalue.QValue(
+                model=get_qvalue_model(config, env),
+                optimizer=getattr(optax, config.optimizer_qnet)(config.lr_contrib),
+                steps=config.steps_qnet,
+                td_lambda=config.lambda_qnet,
+            )
+        contribution = trajcv.TrajCVContribution(
+            num_actions=env.num_actions,
+            obs_shape=env.observation_shape,
+            return_type=config.return_contribution,
+            qvalue_module=qvalue_module,
+        )
     elif config.contribution == "causal" or config.contribution == "causal_gt":
         if config.hindsight_feature_type == "feature":
             feature_module = hindsight_object.FeatureObject(
@@ -122,6 +140,7 @@ def get_contribution(config, env, mdp):
                 ),
                 steps=config.steps_features,
                 reward_values=env.reward_values,
+                per_action_readout = config.get("per_action_readout_feature", True),
                 l1_reg_params=config.get("l1_reg_params_features", 0.0),
                 l2_reg_readout=config.get("l2_reg_readout_feature", 0.0),
             )
@@ -153,7 +172,6 @@ def get_contribution(config, env, mdp):
                 model=get_hindsight_model(config, env),
                 optimizer=getattr(optax, config.optimizer_hindsight)(config.lr_contrib),
                 steps=config.steps_hindsight,
-                hindsight_loss_type=config.hindsight_loss_type,
                 mask_zero_reward_loss=config.get("mask_zero_reward_loss", False),
                 max_grad_norm=config.get("hindsight_max_grad_norm", None),
                 clip_contrastive=config.get("clip_contrastive", False),
@@ -163,7 +181,6 @@ def get_contribution(config, env, mdp):
                 model=get_hindsight_model(config, env),
                 optimizer=getattr(optax, config.optimizer_hindsight)(config.lr_contrib),
                 steps=config.steps_hindsight,
-                hindsight_loss_type=config.hindsight_loss_type,
                 mask_zero_reward_loss=config.get("mask_zero_reward_loss", False),
                 max_grad_norm=config.get("hindsight_max_grad_norm", None),
                 modulate_with_policy=config.get("policy_modulation", False),
@@ -198,10 +215,13 @@ def run(config, logger, logdir, log_level):
 
     switch_env = config.get("env_switch_episode", 0) > 0
     env = envs.create(**config.environment)
-    mdp = load_from_cache_or_compute(
-        os.path.join("cache", "mdp_" + config.env_id + ".pkl"),
-        partial(MDP, env),
-    )
+
+    mdp = None
+    if config.get("compute_mdp", True):
+        mdp = load_from_cache_or_compute(
+            os.path.join("cache", "mdp_" + config.env_id + ".pkl"),
+            partial(MDP, env),
+        )
     if switch_env:
         env_bis_config = copy.deepcopy(config.environment)
         env_bis_config["reward_treasure"] = [-r for r in env_bis_config["reward_treasure"]]
@@ -257,6 +277,9 @@ def run(config, logger, logdir, log_level):
     runner_state = runner.reset(jax.random.PRNGKey(config.seed))
 
     runner.add_callback(Event.EVAL_EPISODE, env_info_callback, log_level=1)
+
+    if config.environment.name == "interleaving_stochastic":
+        runner.add_callback(Event.EVAL_EPISODE, get_task_disentangling_callback(env), log_level=3)
 
     if switch_env:
         runner.add_callback(

@@ -13,40 +13,36 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 import ml_collections as mlc
 
 
-def environment_config(env_length: int):
-    """
-    Variable treasure probabilty variant of `treasure_conveyor_noisy_distractor_treasure_short`
-    """
+def environment_config(num_contexts, max_parallel_contexts, num_objects, die_prob, seed):
     config = mlc.ConfigDict()
-    config.length = env_length
-    config.num_keys = 1
-    config.name = "treasure_conveyor"
-    config.reward_distractor = [r * (23.0 / env_length) for r in [0.1, 0.9]]
-    config.reward_distractor_logits = [0.0, 0.0]
-    config.reward_treasure = 0.2 * (23.0 / env_length)
-    config.reward_treasure_logits = [0.0]  # deterministic reward
-    config.random_distractors = False
-    config.seed = 2022
-    config.distractor_prob = 0.8
+    config.num_contexts = num_contexts
+    config.max_parallel_contexts = max_parallel_contexts
+    config.num_objects = num_objects
+    config.length = 100
+    config.die_prob = die_prob
+    config.name = f"interleaving_stochastic"
+    config.seed = seed
 
     return config
 
 
 def get_config(method):
     config = mlc.ConfigDict()
-    env_length, method = method.split(";")
+    num_contexts, max_parallel_contexts, num_objects, die_prob, method = method.split(";")
     config.method = method
 
-    config.env_length = int(env_length)
-    config.environment = environment_config(config.env_length)
-    config.env_id = "canonical_final_env_len_{}".format(config.env_length)
+    config.num_contexts = int(num_contexts)
+    config.max_parallel_contexts = int(max_parallel_contexts)
+    config.num_objects = int(num_objects)
+    config.die_prob = float(die_prob)
+    env_seed = 2020
+    config.environment = environment_config(config.num_contexts, config.max_parallel_contexts, config.num_objects, config.die_prob, env_seed)
+    config.env_id = f"interleaving_stochastic_{num_contexts}_{max_parallel_contexts}_{num_objects}_{die_prob}_{env_seed}"
 
-    config.policy_var_first_state_only = True
-
+    config.policy_var_first_state_only = False
     config.seed = 0
-
     config.batch_size = 8
-    config.offline_batch_size = 128  * config.env_length
+    config.offline_batch_size = 720
     config.buffer_size = config.batch_size
     config.offline_buffer_size = config.offline_batch_size
     config.eval_batch_size = 512
@@ -66,15 +62,13 @@ def get_config(method):
     config.hindsight_model_type = "hypernet"
 
     config.method = method
-    config.entropy_reg = 0.03 * (20.0 / (config.env_length - 3)) ** (
-        0.68260619448
-    )  # such that the entropy reg interpoolates between 0.03 at lenght 23 and 0.01 at 103
+    config.entropy_reg = 0.01
     config.pg_norm = -1
 
     if method == "reinforce":
         config.contribution = "reinforce"
         config.return_contribution = "action_value"
-        config.lr_agent = 0.0003
+        config.lr_agent = 0.001
 
     elif method == "advantage":
         config.lr_agent = 0.001
@@ -88,19 +82,11 @@ def get_config(method):
         config.steps_value = 1
 
     elif method == "qnet":
+        config.entropy_reg = 0.003
+
         config.lr_agent = 0.0003
         config.lr_contrib = 0.003
         config.contribution = "qnet"
-        config.hidden_dim_qnet = (256,)
-        config.lambda_qnet = 0.9
-        config.optimizer_qnet = "adamw"
-        config.return_contribution = "action_value"
-        config.steps_qnet = 1
-
-    elif method == "traj_cv":
-        config.lr_agent = 0.003
-        config.lr_contrib = 0.01
-        config.contribution = "traj_cv"
         config.hidden_dim_qnet = (256,)
         config.lambda_qnet = 0.9
         config.optimizer_qnet = "adamw"
@@ -112,21 +98,22 @@ def get_config(method):
         config.hidden_dim_hindsight = (256,)
         config.hindsight_loss_type = "hindsight"
         config.hindsight_feature_type = "state_based"
-        config.lr_contrib = 0.003
+        config.lr_agent = 0.0001
+        config.lr_contrib = 0.001
         config.optimizer_hindsight = "adamw"
         config.return_contribution = "advantage"
         config.steps_hindsight = 1
         config.policy_modulation = True
+        config.mask_zero_reward_loss = True
         config.clip_contrastive = True
         config.hindsight_max_grad_norm = None
-        config.lr_agent = 0.0003
 
     elif method == "causal_reward":
         config.contribution = "causal"
         config.hidden_dim_hindsight = (256,)
         config.hindsight_loss_type = "hindsight"
         config.hindsight_feature_type = "reward_based"
-        config.lr_contrib = 0.003
+        config.lr_contrib = 0.001
         config.optimizer_hindsight = "adamw"
         config.return_contribution = "advantage"
         config.steps_hindsight = 1
@@ -137,12 +124,12 @@ def get_config(method):
         config.lr_agent = 0.0003
 
     elif method == "causal_reward_feature":
-        config.burnin_episodes = 30
+        config.burnin_episodes = 90
         config.contribution = "causal"
         config.hidden_dim_hindsight = (256,)
         config.hindsight_loss_type = "hindsight"
         config.hindsight_feature_type = "feature"
-        config.lr_contrib = 0.003
+        config.lr_contrib = 0.001
         config.optimizer_hindsight = "adamw"
         config.return_contribution = "advantage"
         config.steps_hindsight = 1
@@ -154,28 +141,38 @@ def get_config(method):
 
         config.hidden_dim_features = 128
         config.optimizer_features = "adamw"
-        config.lr_features = 0.003
-        config.steps_features = 20000
+        config.lr_features = 0.001
+        config.steps_features = 30000
 
-        config.l1_reg_params_features = 0.001
-        config.l2_reg_readout_feature = 0.03
+        config.l1_reg_params_features = 0.003
+        config.l2_reg_readout_feature = 0.0003
         config.threshold_shift = 0.05
         config.per_action_readout_feature = False
+        config.feature_model = "mask"
+        config.discretization = "relu"
+
+    elif method == "traj_cv":
+        config.lr_agent = 0.001
+        config.lr_contrib = 0.001
+        config.contribution = "traj_cv"
+        config.hidden_dim_qnet = (256,)
+        config.lambda_qnet = 0.9
+        config.optimizer_qnet = "adamw"
+        config.return_contribution = "action_value"
+        config.steps_qnet = 1
 
     elif method == "advantage_gt":
-        config.lr_agent = 0.001
+        config.lr_agent = 0.003
         config.contribution = "reinforce_gt"
         config.return_contribution = "advantage"
 
     elif method == "qnet_gt":
         config.lr_agent = 0.01
-
         config.contribution = "qnet_gt"
         config.return_contribution = "advantage"
 
     elif "causal_state_gt" in method:
-        config.lr_agent = 0.0003
-
+        config.lr_agent = 0.003
         config.contribution = "causal_gt"
         config.hindsight_loss_type = "contrastive"
         config.return_contribution = "advantage"
@@ -183,14 +180,13 @@ def get_config(method):
 
     elif "causal_reward_gt" in method:
         config.lr_agent = 0.01
-
         config.contribution = "causal_gt"
         config.hindsight_loss_type = "contrastive"
         config.return_contribution = "advantage"
         config.hindsight_feature_type = "reward_based"
 
     elif method == "traj_cv_gt":
-        config.lr_agent = 0.001
+        config.lr_agent = 0.003
         config.contribution = "traj_cv_gt"
         config.return_contribution = "action_value"
 

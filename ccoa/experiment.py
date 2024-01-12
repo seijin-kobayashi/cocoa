@@ -186,6 +186,8 @@ class Experiment:
             if episode % self.eval_interval_episodes == 0:
                 metrics_eval = self.eval(runner_state)
                 self.log(metrics_eval, prefix="eval/")
+                runner_state = runner_state.replace(reward=metrics_eval["reward_running_avg"],
+                                                    reward_final=metrics_eval["reward_final_running_avg"])
                 self.save(runner_state)
 
         metrics_eval = self.eval(runner_state)
@@ -257,20 +259,14 @@ class Experiment:
         metrics["reward"] = metrics["reward"].sum(-1).mean(0)
         metrics["action_entropy"] = metrics["action_entropy"].sum() / (1 - trajectory.dones).sum()
         metrics["episode"] = runner_state.episode
-        metrics["reward_running_avg"] = runner_state.reward + (
-            (metrics["reward"] - runner_state.reward) / (runner_state.episode + 1)
-        )
-        metrics["reward_final_running_avg"] = runner_state.reward_final + (
-            (metrics["reward_final"] - runner_state.reward_final) / (runner_state.episode + 1)
-        )
 
         new_runner_state = ExperimentState(
             agent=state_agent,
             buffer=state_buffer,
             contribution=state_contribution,
             episode=runner_state.episode + 1,
-            reward=metrics["reward_running_avg"],
-            reward_final=metrics["reward_final_running_avg"],
+            reward=runner_state.reward,
+            reward_final=runner_state.reward_final,
             rng=next_rng,
             offline_buffer=offline_buffer_state,
         )
@@ -294,7 +290,16 @@ class Experiment:
             rngs_rollout, runner_state.agent, runner_state.episode
         )
 
+        metrics["reward_final"] = metrics["reward"][:, -1].mean()
         metrics["reward"] = metrics["reward"].sum(-1).mean(0)
+
+        metrics["reward_running_avg"] = runner_state.reward + (
+            (metrics["reward"] - runner_state.reward) / (runner_state.episode + 1)
+        )
+        metrics["reward_final_running_avg"] = runner_state.reward_final + (
+            (metrics["reward_final"] - runner_state.reward_final) / (runner_state.episode + 1)
+        )
+
         metrics.update(
             {
                 k: v.sum() / (1 - trajectory.dones).sum()

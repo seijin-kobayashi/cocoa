@@ -46,7 +46,6 @@ class CoefficientBase(ContributionCoefficientModule):
         optimizer,
         steps,
         mask_zero_reward_loss,
-        clip_contrastive,
         max_grad_norm,
     ):
         self.hindsight_model = hk.without_apply_rng(hk.transform(model))
@@ -60,7 +59,6 @@ class CoefficientBase(ContributionCoefficientModule):
             self.hindsight_optimizer = optimizer
         self.hindsight_steps = steps
         self.mask_zero_reward_loss = mask_zero_reward_loss
-        self.clip_contrastive = clip_contrastive
 
     @abc.abstractmethod
     def __call__(self, state, observations, policy_logits, hindsight_objects):
@@ -168,7 +166,6 @@ class HindsightCoefficient(CoefficientBase):
         model,
         optimizer,
         steps,
-        hindsight_loss_type,
         mask_zero_reward_loss,
         max_grad_norm,
         modulate_with_policy,
@@ -177,7 +174,6 @@ class HindsightCoefficient(CoefficientBase):
             model,
             optimizer,
             steps,
-            hindsight_loss_type,
             mask_zero_reward_loss,
             max_grad_norm,
         )
@@ -217,7 +213,6 @@ class ContrastiveCoefficient(CoefficientBase):
         model,
         optimizer,
         steps,
-        hindsight_loss_type,
         mask_zero_reward_loss,
         max_grad_norm,
         clip_contrastive,
@@ -226,7 +221,6 @@ class ContrastiveCoefficient(CoefficientBase):
             model,
             optimizer,
             steps,
-            hindsight_loss_type,
             mask_zero_reward_loss,
             max_grad_norm,
         )

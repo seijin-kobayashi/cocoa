@@ -93,7 +93,6 @@ class ConveyorTreasure(Environment):
         self.zero_to_reward_values = np.where(self._reward_values == 0.0)[0]
 
         self.length = length
-        self.num_keys = num_keys
         self.seed = seed
         self.num_keys = num_keys
         self.key_pos = np.array([int(i * (length - 2) / num_keys) for i in range(num_keys)])

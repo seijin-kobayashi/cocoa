@@ -1,0 +1,23 @@
+method: grid
+metric:
+  goal: maximize
+  name: reward_running_avg
+name: 20231025_interleaving_gt
+parameters:
+  config:
+    values:
+      - configs/interleaving_stochastic_performance.py:5;3;2;0.05;advantage_gt
+      - configs/interleaving_stochastic_performance.py:5;3;2;0.05;causal_reward_gt
+      - configs/interleaving_stochastic_performance.py:5;3;2;0.05;causal_state_gt
+      - configs/interleaving_stochastic_performance.py:5;3;2;0.05;qnet_gt
+      - configs/interleaving_stochastic_performance.py:5;3;2;0.05;traj_cv_gt
+  config.seed:
+    values:
+      - 2023
+      - 2024
+      - 2025
+      - 2026
+      - 2027
+  log_level:
+    value: 1
+program: run.py
