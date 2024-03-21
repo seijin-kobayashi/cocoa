@@ -1,6 +1,6 @@
 # COCOA
 
-Code accompanying the paper [Would I have gotten that reward? Long-term credit assignment by counterfactual contribution analysis](https://github.com/seijin-kobayashi/cocoa).
+Code accompanying the NeurIPS 2023 spotlight paper [Would I have gotten that reward? Long-term credit assignment by counterfactual contribution analysis](Would I have gotten that reward? Long-term credit assignment by counterfactual contribution analysis).
 
 ## Dependencies
 
